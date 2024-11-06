@@ -17,7 +17,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => console.log('Failed to connect to MongoDB:', err));
 
 
-app.use(session({ secret: 'aman', resave: false, saveUninitialized: true }));
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 
