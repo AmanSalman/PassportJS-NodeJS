@@ -9,7 +9,7 @@ dotenv.config()
 
 
 const User = require('./models/User');
-require('./passport');
+require('./auth');
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -29,6 +29,35 @@ app.get('/', (req, res) => {
   res.send('<a href="/auth/google">Authenticate with Google</a>');
 });
 
+app.get('/auth/google',
+  passport.authenticate('google', { scope: [ 'email', 'profile' ], }
+));
+
+app.get('/google/callback', 
+  passport.authenticate('google', {
+    successRedirect:'https://www.linkedin.com/in/AmanSalman',
+    failureRedirect: '/auth/failure'
+  }));
+
+app.get('/auth/failure', (req, res) => {
+  res.send('Something went wrong');
+});
+
+
+app.get('/protected', isLoggedIn, (req,res)=>{
+  console.log(req.user)
+  res.send(`hello ${req.user.displayName}`)
+})
+
+app.get('/logout', (req, res) => {
+  req.logout();
+  req.session.destroy();
+  res.send('Goodbye!');
+});
+
+app.get('/auth/google/failure', (req, res) => {
+  res.send('Failed to authenticate..');
+});
 
 app.get('/users', async (req, res) => {
   try {
@@ -40,28 +69,4 @@ app.get('/users', async (req, res) => {
   }
 });
 
-
-const providers = ['google', 'facebook', 'apple'];
-providers.forEach((provider) => {
-  app.get(`/${provider}`, passport.authenticate(provider, { scope: ['email', 'profile'] }));
-  app.get(
-    `/${provider}/callback`,
-    passport.authenticate(provider, {
-      successRedirect: '/auth/success',
-      failureRedirect: '/auth/failure',
-    })
-  );
-});
-
-// Optional: Success and Failure Routes
-app.get('/success', (req, res) => {
-  res.status(200).json({ message: 'Successfully authenticated!' });
-});
-
-app.get('/failure', (req, res) => {
-  res.status(400).json({ message: 'Authentication failed.' });
-});
-
 app.listen(3000, ()=> console.log('Listening on port 3000'))
-
-
