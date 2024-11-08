@@ -1,0 +1,182 @@
+// // dynamic way for multiple providers.
+
+// import passport from 'passport';
+// import { Strategy as GoogleStrategy } from 'passport-google-oauth2';
+// import { Strategy as FacebookStrategy } from 'passport-facebook';
+// import { Strategy as AppleStrategy } from 'passport-apple';
+// import User from './models/User.js';
+// import dotenv from 'dotenv';
+
+// dotenv.config();
+
+// const strategies = [
+//   {
+//     name: 'google',
+//     Strategy: GoogleStrategy,
+//     options: {
+//       clientID: process.env.GOOGLE_CLIENT_ID,
+//       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//       callbackURL: `${process.env.API_Link}/auth/google/callback`,
+//     },
+//     profileHandler: (profile) => ({
+//       id: profile.id,
+//       username: profile.displayName,
+//       email: profile.emails[0].value,
+//     }),
+//   },
+//   {
+//     name: 'facebook',
+//     Strategy: FacebookStrategy,
+//     options: {
+      // clientID: process.env.FACEBOOK_APP_ID,
+      // clientSecret: process.env.FACEBOOK_APP_SECRET,
+//       callbackURL: `http://localhost:3000/auth/facebook/callback`,
+//       profileFields: ['id', 'emails', 'name'],
+//     },
+//     profileHandler: (profile) => ({
+//       id: profile.id,
+//       username: `${profile.name.givenName} ${profile.name.familyName}`,
+//       email: profile.emails ? profile.emails[0].value : null,
+//     }),
+//   },
+//   // {
+//   //   name: 'apple',
+//   //   Strategy: AppleStrategy,
+//   //   options: {
+//   //     clientID: process.env.APPLE_CLIENT_ID,
+//   //     teamID: process.env.APPLE_TEAM_ID,
+//   //     keyID: process.env.APPLE_KEY_ID,
+//   //     callbackURL: `${process.env.API_Link}/auth/apple/callback`,
+//   //   },
+//   //   profileHandler: (profile) => ({
+//   //     id: profile.id,
+//   //     username: profile.name || profile.email,
+//   //     email: profile.email,
+//   //   }),
+//   // },
+// ];
+
+// strategies.forEach(({ name, Strategy, options, profileHandler }) => {
+//   passport.use(
+//     new Strategy(
+//       options,
+//       async (accessToken, refreshToken, profile, done) => {
+//         try {
+//           const userData = profileHandler(profile);
+//           let user = await userModel.findOne({ [`${name}Id`]: userData.id });
+//           if (!user) {
+//             user = new User({
+//               [`${name}Id`]: userData.id,
+//               username: userData.username,
+//               email: userData.email,
+//             });
+//             await user.save();
+//           }
+//           return done(null, user);
+//         } catch (error) {
+//           return done(error, null);
+//         }
+//       }
+//     )
+//   );
+// });
+
+// passport.serializeUser((user, done) => done(null, user.id));
+// passport.deserializeUser(async (id, done) => {
+//   try {
+//     const user = await userModel.findById(id);
+//     done(null, user);
+//   } catch (error) {
+//     done(error, null);
+//   }
+// });
+
+
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth2';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+import { Strategy as AppleStrategy } from 'passport-apple';
+import dotenv from 'dotenv';
+import User from './models/User.js'; // assuming User is a MongoDB model
+
+dotenv.config();
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: 'http://localhost:3000/auth/google/callback'
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        const user = await User.findOne({ googleId: profile.id });
+        if (user) {
+            return done(null, user);
+        }
+        const newUser = new User({
+            googleId: profile.id,
+            username: profile.displayName,
+            email: profile.emails[0].value
+        });
+        await newUser.save();
+        return done(null, newUser);
+    } catch (error) {
+        done(error, null);
+    }
+}));
+
+passport.use(new FacebookStrategy({
+  clientID: process.env.FACEBOOK_APP_ID,
+  clientSecret: process.env.FACEBOOK_APP_SECRET,
+    callbackURL: 'http://localhost:3000/auth/facebook/callback'
+}, async (accessToken, refreshToken, profile, done) => {
+    try {
+        const user = await User.findOne({ facebookId: profile.id });
+        if (user) {
+            return done(null, user);
+        }
+        const newUser = new User({
+            facebookId: profile.id,
+            username: profile.displayName,
+            email: profile.emails[0].value
+        });
+        await newUser.save();
+        return done(null, newUser);
+    } catch (error) {
+        done(error, null);
+    }
+}));
+
+// passport.use(new AppleStrategy({
+//     clientID: process.env.APPLE_CLIENT_ID,
+//     teamID: process.env.APPLE_TEAM_ID,
+//     keyID: process.env.APPLE_KEY_ID,
+//     privateKey: process.env.APPLE_PRIVATE_KEY,
+//     callbackURL: 'http://localhost:3000/auth/apple/callback'
+// }, async (accessToken, refreshToken, profile, done) => {
+//     try {
+//         const user = await User.findOne({ appleId: profile.id });
+//         if (user) {
+//             return done(null, user);
+//         }
+//         const newUser = new User({
+//             appleId: profile.id,
+//             username: profile.displayName,
+//             email: profile.email // Apple may not always return an email
+//         });
+//         await newUser.save();
+//         return done(null, newUser);
+//     } catch (error) {
+//         done(error, null);
+//     }
+// }));
+
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const user = await User.findById(id);
+        done(null, user);
+    } catch (error) {
+        done(error, null);
+    }
+});

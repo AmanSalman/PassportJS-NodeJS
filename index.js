@@ -1,15 +1,13 @@
-const express = require('express')
-const dotenv = require('dotenv')
-const session = require('express-session')
-const app = express()
-const passport = require('passport')
-const mongoose = require('mongoose');
-
+import express from 'express'
+import passport from 'passport'
+import dotenv from 'dotenv'
+import session from 'express-session'
+import mongoose from 'mongoose'
+import facebookRouter from './ProvidersAuth/facebook-auth.js'
+import googleRouter from './ProvidersAuth/google-auth.js'
 dotenv.config()
+const app = express()
 
-
-const User = require('./models/User');
-require('./passport');
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -26,9 +24,65 @@ function isLoggedIn(req, res, next) {
 }
 
 app.get('/', (req, res) => {
-  res.send('<a href="/auth/google">Authenticate with Google</a>');
+  res.send(`
+    <html>
+      <head>
+        <title>Authentication</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+          }
+          .container {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+          }
+          h1 {
+            color: #333;
+          }
+          a {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+          }
+          a:hover {
+            background-color: #357ae8;
+          }
+          .facebook {
+            background-color: #3b5998;
+          }
+          .facebook:hover {
+            background-color: #2d4373;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>Authenticate with Google or Facebook</h1>
+          <a href="/auth/google">Authenticate with Google</a>
+          <a href="/auth/facebook" class="facebook">Authenticate with Facebook</a>
+        </div>
+      </body>
+    </html>
+  `);
 });
 
+app.use('/auth/facebook', facebookRouter);
+app.use('/auth/google', googleRouter);
 
 app.get('/users', async (req, res) => {
   try {
@@ -41,26 +95,26 @@ app.get('/users', async (req, res) => {
 });
 
 
-const providers = ['google', 'facebook', 'apple'];
-providers.forEach((provider) => {
-  app.get(`/${provider}`, passport.authenticate(provider, { scope: ['email', 'profile'] }));
-  app.get(
-    `/${provider}/callback`,
-    passport.authenticate(provider, {
-      successRedirect: '/auth/success',
-      failureRedirect: '/auth/failure',
-    })
-  );
-});
+// const providers = ['google', 'facebook', 'apple'];
+// providers.forEach((provider) => {
+//   app.get(`/auth/${provider}`, passport.authenticate(provider, { scope: ['email', 'profile'] }));
+//   app.get(
+//     `/auth/${provider}/callback`,
+//     passport.authenticate(provider, {
+//       successRedirect: '/auth/success',
+//       failureRedirect: '/auth/failure',
+//     })
+//   );
+// });
 
-// Optional: Success and Failure Routes
-app.get('/success', (req, res) => {
-  res.status(200).json({ message: 'Successfully authenticated!' });
-});
+// // Optional: Success and Failure Routes
+// app.get('/auth/success', (req, res) => {
+//   res.status(200).json({ message: 'Successfully authenticated!' });
+// });
 
-app.get('/failure', (req, res) => {
-  res.status(400).json({ message: 'Authentication failed.' });
-});
+// app.get('/auth/failure', (req, res) => {
+//   res.status(400).json({ message: 'Authentication failed.' });
+// });
 
 app.listen(3000, ()=> console.log('Listening on port 3000'))
 

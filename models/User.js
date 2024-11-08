@@ -1,5 +1,5 @@
 // models/User.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   googleId: { type: String, required: true },
@@ -8,4 +8,7 @@ const userSchema = new mongoose.Schema({
   profilePicture: String,
 });
 
-module.exports = mongoose.model('User', userSchema);
+
+const User = mongoose.model('User', userSchema);
+
+export default User;
