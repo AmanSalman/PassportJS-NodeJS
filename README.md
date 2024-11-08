@@ -41,6 +41,8 @@ This project allows users to authenticate using their Google or Facebook account
     FACEBOOK_CLIENT_ID=your-facebook-client-id
     FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
     FACEBOOK_CALLBACK_URL=http://localhost:3000/auth/facebook/callback
+
+    SESSION_SECRET = your-secret-session
     ```
 
 4. Run the application:
